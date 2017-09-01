@@ -1,3 +1,19 @@
+T_ATOM = 1
+T_BEEB = 2
+
+  if (TARGET = T_ATOM)
+OSRDCH = $FFE3
+OSWRCH = $FFF4
+  else
+    if (TARGET = T_BEEB)
+OSRDCH = $FFE0
+OSWRCH = $FFEE
+    else
+ERROR TARGET must be 1 or 2
+    endif
+  endif
+
+
 ;**** report 6502 funtional test errors to standard I/O ****
 ;
 ;this include file is part of the 6502 functional tests
@@ -112,14 +128,7 @@ rsuc1   jsr rget
 ;get a character from standard input 
 ;adjust according to the needs in your test environment
 rget                ;get character in A
-;rget1
-;        lda $bff1   ;wait RDRF
-;        and #8
-;        beq rget1
-;not a real ACIA - so RDRF is not checked
-        lda $bff0   ;read acia rx reg
-;the load can be replaced by a call to a kernal routine
-;        jsr $ffcf   ;example: CHRIN for a C64
+        jsr OSRDCH  ;example: OSRDCH on a Beeb/Atom
         cmp #'a'    ;lower case
         bcc rget1
         and #$5f    ;convert to upper case
@@ -153,15 +162,7 @@ rnib    clc         ;report nibble in A
 ;adjust according to the needs in your test environment
 ;register X needs to be preserved!
 rchar               ;report character in A
-;        pha         ;wait TDRF
-;rchar1  lda $bff1
-;        and #$10
-;        beq rchar1
-;        pla
-;not a real ACIA - so TDRF is not checked
-        sta $bff0   ;write acia tx reg
-;the store can be replaced by a call to a kernal routine
-;        jsr $ffd2   ;example: CHROUT for a C64
+        jsr OSWRCH  ;example: OSWRCH on a Beeb/Atom
         rts
 
 rmsg_start

@@ -72,12 +72,12 @@
 ;ROM_vectors writable (0=no, 1=yes)
 ;if ROM vectors can not be used interrupts will not be trapped
 ;as a consequence BRK can not be tested but will be emulated to test RTI
-ROM_vectors = 1
+ROM_vectors = 0
 
 ;load_data_direct (0=move from code segment, 1=load directly)
 ;loading directly is preferred but may not be supported by your platform
 ;0 produces only consecutive object code, 1 is not suitable for a binary image
-load_data_direct = 1
+load_data_direct = 0
 
 ;I_flag behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
 ;change) 2 requires extra code and is not recommended.
@@ -86,29 +86,32 @@ I_flag = 3
 ;configure memory - try to stay away from memory used by the system
 ;zero_page memory start address, $4e (78) consecutive Bytes required
 ;                                add 2 if I_flag = 2
-zero_page = $a  
+zero_page = $50
 
 ;data_segment memory start address, $63 (99) consecutive Bytes required
 ; + 12 Bytes at data_segment + $f9 (JMP indirect page cross test)
-data_segment = $200
+data_segment = $3200
     if (data_segment & $ff) != 0
         ERROR ERROR ERROR low byte of data_segment MUST be $00 !!
     endif  
 
 ;code_segment memory start address, 10kB of consecutive space required
 ;                                   add 1 kB if I_flag = 2
-code_segment = $400  
+code_segment = $3400
 
 ;added WDC only opcodes WAI & STP (0=test as NOPs, >0=no test)
-wdc_op = 1
+wdc_op = WDC_OP
 
 ;added Rockwell & WDC opcodes BBR, BBS, RMB & SMB
 ;(0=test as NOPs, 1=full test, >1=no test) 
-rkwl_wdc_op = 1
+rkwl_wdc_op = RKWL_OP
+
+;added Rockwell & WDC NOPs
+rkwl_wdc_nops = 1
 
 ;report errors through I/O channel (0=use standard self trap loops, 1=include
 ;report.i65 as I/O channel, add 3 kB)
-report = 0
+report = 1
 
 ;RAM integrity test option. Checks for undesired RAM writes.
 ;set lowest non RAM or RAM mirror address page (-1=disable, 0=64k, $40=16k)
@@ -1132,6 +1135,7 @@ nop_test    macro       ;\1 = opcode, \2 = # of bytes
             trap_ne         ;x changed
             endm
             
+  if rkwl_wdc_nops = 1
         nop_test $02,2
         nop_test $22,2
         nop_test $42,2
@@ -1215,6 +1219,7 @@ nop_test    macro       ;\1 = opcode, \2 = # of bytes
         nop_test $db,1
     endif
         next_test
+  endif
             
 ; jump indirect (test page cross bug is fixed)
         ldx #3          ;prepare table
