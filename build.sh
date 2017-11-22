@@ -43,6 +43,11 @@ function make_atm_header {
      mv hdr $1
 }
 
+function make_inf_file {
+    base=`basename $1`
+    echo -e "\$.$base\t3400\t3400" > $1.inf
+}
+
 
 # Target 1 = ATOM
 # Target 2 = BEEB
@@ -60,20 +65,41 @@ do
     mkdir -p $DIR
     rm -f $DIR/*
 
+    if [ $TARGET == "2" ]
+    then
+        rm -f $DIR/dormann.ssd
+        ./tools/mmb_utils/blank_ssd.pl $DIR/dormann.ssd
+        ./tools/mmb_utils/title.pl $DIR/dormann.ssd Dormann
+    fi
+    
     BIN=D6502
     ../as65/as65 -DTARGET=$TARGET -o$DIR/$BIN -l$DIR/$BIN.lst -m -w -h0 6502_functional_test.a65
 
     if [ $TARGET == "1" ]
     then
         make_atm_header $DIR/$BIN
+    else
+        make_inf_file $DIR/$BIN
+        ./tools/mmb_utils/putfile.pl $DIR/dormann.ssd $DIR/$BIN
     fi
 
     for WDC_OP in 0 1
     do
         for RKWL_OP in 0 1
         do
-            BIN=D65C02$WDC_OP$RKWL_OP
+            BIN=D65C$WDC_OP$RKWL_OP
             ../as65/as65 -DTARGET=$TARGET -DWDC_OP=$WDC_OP -DRKWL_OP=$RKWL_OP -o$DIR/$BIN -l$DIR/$BIN.lst -m -w -x -h0 65C02_extended_opcodes_test.a65c
+
+            if [ $TARGET == "1" ]
+            then
+                make_atm_header $DIR/$BIN
+            else
+                make_inf_file $DIR/$BIN
+                ./tools/mmb_utils/putfile.pl $DIR/dormann.ssd $DIR/$BIN
+            fi
         done
-    done
+    done    
 done
+
+
+./tools/mmb_utils/info.pl beeb/dormann.ssd
