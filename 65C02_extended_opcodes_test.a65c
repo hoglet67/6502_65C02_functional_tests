@@ -2670,8 +2670,10 @@ irq_trap                ;BRK test or unextpected BRK or IRQ
         ;next traps could be caused by unexpected BRK or IRQ
         ;check stack for BREAK and originating location
         ;possible jump/branch into weeds (uninitialized space)
+    if ROM_vectors = 1
         cmp #$ff-'B'    ;BRK pass 2 registers loaded?
         beq break2
+    endif
         cmp #'B'        ;BRK pass 1 registers loaded?
         trap_ne
         cpx #'R'
@@ -2684,6 +2686,7 @@ irq_trap                ;BRK test or unextpected BRK or IRQ
         lda $102,x
         cmp_flag 0      ;break test should have B=1 & unused=1 on stack
         trap_ne         ;possible no break flag on stack
+    if ROM_vectors = 1
         pla
         cmp_flag intdis ;should have added interrupt disable
         trap_ne
@@ -2740,7 +2743,10 @@ break2                  ;BRK pass 2
         rti
         trap            ;runover protection
         jmp start       ;catastrophic error - cannot continue
-        
+    else
+        trap_eq         ;check stack for conditions at BRK
+    endif
+
     if report = 1
         include "report.i65"
     endif
